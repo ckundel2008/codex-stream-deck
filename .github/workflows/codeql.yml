@@ -29,12 +29,16 @@ jobs:
             runner: ubuntu-latest
             build-mode: none
           - language: swift
-            runner: macos-latest
+            runner: macos-15
             build-mode: manual
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Select Swift analysis toolchain
+        if: matrix.language == 'swift'
+        run: |
+          echo 'DEVELOPER_DIR=/Applications/Xcode_16.4.app/Contents/Developer' >> "$GITHUB_ENV"
       - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
