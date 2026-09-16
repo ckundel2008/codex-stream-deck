@@ -46,7 +46,8 @@ jobs:
         # the environment CodeQL needs to trace the compiler.
         run: |
           swift_compiler="$(xcrun --find swiftc)"
-          "$swift_compiler" -O \
+          macos_sdk="$(xcrun --sdk macosx --show-sdk-path)"
+          "$swift_compiler" -O -sdk "$macos_sdk" \
             -import-objc-header IOHIDUserDeviceShim.h \
             -framework IOKit -framework CoreFoundation -framework Foundation \
             main.swift -o CodexMicroVirtualHID
