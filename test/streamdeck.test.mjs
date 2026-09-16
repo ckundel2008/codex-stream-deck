@@ -101,10 +101,41 @@ test("working direct-mode tasks are blue instead of recent green", () => {
   };
   assert.equal(agentDirectStatusLabel(working), "ARBEITET");
   assert.deepEqual(agentDirectStatusAccent(working), { r: 48, g: 79, b: 254 });
+});
 
-  const complete = { ...working, runState: "complete" };
-  assert.equal(agentDirectStatusLabel(complete), "BEREIT");
-  assert.deepEqual(agentDirectStatusAccent(complete), { r: 105, g: 112, b: 130 });
+test("finished direct-mode results turn grey only after Codex marks them read", () => {
+  const complete = { runState: "complete", hasUnreadTurn: true };
+  assert.equal(agentDirectStatusLabel(complete), "FERTIG");
+  assert.deepEqual(agentDirectStatusAccent(complete), { r: 0, g: 255, b: 76 });
+  const read = { ...complete, hasUnreadTurn: false };
+  assert.equal(agentDirectStatusLabel(read), "BEREIT");
+  assert.deepEqual(agentDirectStatusAccent(read), { r: 105, g: 112, b: 130 });
+  const unknown = { runState: "complete", hasUnreadTurn: null };
+  assert.equal(agentDirectStatusLabel(unknown), "FERTIG");
+  assert.deepEqual(agentDirectStatusAccent(unknown), { r: 0, g: 255, b: 76 });
+  assert.equal(agentDirectStatusLabel({ ...complete, runState: "working" }), "ARBEITET");
+});
+
+test("the deck repaints when a completed result is read and when a new unread result arrives", async () => {
+  let hasUnreadTurn = true;
+  const backend = new StreamDeckBackend(new CodexMicroEmulator(), {
+    directMode: true,
+    loadAgentEntries: () => [{ threadId: "00000000-0000-4000-8000-000000000011", title: "TEST", runState: "complete", hasUnreadTurn }],
+  });
+  backend.deck = {};
+  const paints = [];
+  backend._fillKey = async (key, bg, options) => { if (key === 0) paints.push(options); return true; };
+  await backend._refreshAgentTitles(true);
+  hasUnreadTurn = false;
+  await backend._refreshAgentTitles(true);
+  await backend._refreshAgentTitles(true);
+  hasUnreadTurn = true;
+  await backend._refreshAgentTitles(true);
+  assert.deepEqual(paints.map(({ detail, accent }) => [detail, accent]), [
+    ["FERTIG", { r: 0, g: 255, b: 76 }],
+    ["BEREIT", { r: 105, g: 112, b: 130 }],
+    ["FERTIG", { r: 0, g: 255, b: 76 }],
+  ]);
 });
 
 test("reasoning dial rotation emits ENC_CW/ENC_CC with act 2 (single tick)", () => {

@@ -58,6 +58,23 @@ test("long task titles remain readable on a Stream Deck key", () => {
   assert.equal(compactAgentTitle("Unsichere IP-Anzeige beheben"), "IP-ANZEIGE");
 });
 
+test("direct-mode catalogue entries follow Codex's persisted unread flags", () => {
+  const { dir, dbPath, sessionsRoot } = catalogue();
+  const statePath = join(dir, "state.json");
+  const unreadId = "00000000-0000-0000-0000-000000000002";
+  const writeState = (ids) => writeFileSync(statePath, JSON.stringify({
+    "electron-thread-read-state-v1": {
+      version: 1, unreadByIdentity: { account: { [`local:${"a".repeat(64)}`]: ids } },
+    },
+  }));
+  writeState([unreadId]);
+  assert.deepEqual(loadAgentEntries(2, dbPath, null, sessionsRoot, statePath).map((entry) => entry.hasUnreadTurn), [true, false]);
+  writeState([]);
+  assert.deepEqual(loadAgentEntries(2, dbPath, null, sessionsRoot, statePath).map((entry) => entry.hasUnreadTurn), [false, false]);
+  writeFileSync(statePath, "{");
+  assert.deepEqual(loadAgentEntries(2, dbPath, null, sessionsRoot, statePath).map((entry) => entry.hasUnreadTurn), [null, null]);
+});
+
 test("the newest rollout marker distinguishes working from complete", () => {
   const threadId = syntheticThreadId(new Date(2026, 7, 31, 12));
   const root = mkdtempSync(join(tmpdir(), "codex-micro-sessions-"));
@@ -168,7 +185,7 @@ test("working tasks precede a delayed recent-task catalogue", () => {
 
   assert.deepEqual(loadWorkingThreadIds(root), [workingId]);
   assert.deepEqual(
-    loadAgentEntries(2, dbPath, null, root).map((entry) => [entry.threadId, entry.runState]),
+    loadAgentEntries(2, dbPath, null, root, join(root, "missing-state.json")).map((entry) => [entry.threadId, entry.runState]),
     [[workingId, "working"], [recentId, "complete"]],
   );
 });

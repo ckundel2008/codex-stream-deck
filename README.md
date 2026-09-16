@@ -13,7 +13,7 @@ The image is a software-rendered example, not a hardware acceptance test.
 ## What it does
 
 - Shows five local tasks, prioritizing running tasks. Press a task key to open it in Codex.
-- Uses blue for a running turn, gray for a completed turn, red for an aborted turn. Unknown state displays recency instead.
+- Uses blue for a running turn, green for a finished unread result, gray once Codex marks it read, and red for an aborted turn. Unknown run state displays recency instead. If read state is unavailable, finished results remain green.
 - Displays the remaining ordinary Codex weekly allowance. Unavailable or expired data displays **KEINE DATEN**, never a guessed percentage.
 - Provides action keys for Enter, Escape, Fast mode, fork, Quick Chat, archive, voice and opening Codex.
 - Runs independently of Codex: no app patching, injected shim or app restart is needed in the recommended direct mode.
@@ -22,7 +22,7 @@ The image is a software-rendered example, not a hardware acceptance test.
 
 - **macOS only**, Node.js **22.13 or newer** (Node 24 recommended), Codex desktop app and a USB Stream Deck.
 - Main hardware target: **Stream Deck MK.2, 15 keys**. Stream Deck + has a layout and unit-tested dial mapping, but is not physically verified by this release. Other models are experimental.
-- Requires Codex's local `~/.codex/sqlite/codex-dev.db` catalog and `~/.codex/sessions` layout. These are internal formats and can change after Codex updates. Remote/cloud tasks are not represented by local running-state discovery.
+- Requires Codex's local `~/.codex/sqlite/codex-dev.db` catalog and `~/.codex/sessions` layout. Read status uses `electron-thread-read-state-v1` in `~/.codex/.codex-global-state.json`, when it resolves to one account and one local execution host. These are internal formats and can change after Codex updates. Remote/cloud tasks are not represented by local running-state discovery.
 - Default key captions and command searches are **German**. English command-search presets are available; see configuration below. App shortcuts may differ with customization, version or language.
 - **Approve is Enter; Reject is Escape.** They act on the currently focused Codex control. Enter can also send a draft. They do not validate or select a specific pending approval. Use only while looking at Codex.
 - Fast/fork use the command palette and depend on the exact visible command name. Voice is a toggle shortcut, not push-to-talk. Direct-mode reasoning dials require configuring Codex shortcuts; see the troubleshooting guide.
@@ -107,7 +107,7 @@ Weekly CLI discovery tries the configured path, Codex.app, the older ChatGPT.app
 
 ## Privacy
 
-The bridge reads task titles, IDs, recency and event markers from the local Codex catalog/session files. Session files can contain conversations, but this integration uses their state markers and does not transmit or log conversation content. Task names are visible to anyone looking at the deck.
+The bridge reads task titles, IDs, recency and event markers from the local Codex catalog/session files, plus unread flags from Codex's global state file. It does not change Codex's read flags. Session files can contain conversations, but this integration uses their state markers and does not transmit or log conversation content. Task names are visible to anyone looking at the deck.
 
 The weekly gauge starts the locally installed Codex CLI and calls `account/rateLimits/read`; that CLI uses the user's existing authentication and may contact OpenAI. No separate API key or model request is needed. The bridge itself has no telemetry/upload feature. **Do not upload your `.codex` folder, databases, logs, credentials or real session captures to issues.**
 

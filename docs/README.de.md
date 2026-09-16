@@ -30,7 +30,7 @@ Zuerst eine Aufgabentaste testen: Sie muss die auf der Taste angezeigte Aufgabe 
 | Genehmigen / Enter | Ablehnen / Escape | Wochenrest | Fast Mode | Verzweigen |
 | Quick Chat | Leer | Aktuelle Aufgabe archivieren | Sprache | Codex öffnen |
 
-Blau: letzter gemeldeter Zustand „arbeitet“. Grau: abgeschlossen. Rot: abgebrochen. Nach einem Absturz kann der letzte Zustand veraltet sein. Fehlende Kontingentdaten werden als „KEINE DATEN“ dargestellt. Sprache ist ein Tastenkürzel zum Starten des Sprachmodus, kein Halten-zum-Sprechen.
+Blau: letzter gemeldeter Zustand „arbeitet“. Grün: Ergebnis fertig und ungelesen. Grau: Codex führt die Aufgabe als gelesen. Rot: abgebrochen. Der Lesestatus wird aus `electron-thread-read-state-v1` in `~/.codex/.codex-global-state.json` gelesen; bei mehreren Konten oder lokalen Ausführungsumgebungen kann die Zuordnung unklar sein. Ohne verlässlichen Lesestatus bleibt ein fertiges Ergebnis grün. Nach einem Absturz kann der letzte Zustand veraltet sein. Fehlende Kontingentdaten werden als „KEINE DATEN“ dargestellt. Sprache ist ein Tastenkürzel zum Starten des Sprachmodus, kein Halten-zum-Sprechen.
 
 ## Autostart und Entfernen
 
@@ -51,7 +51,7 @@ Die Tastenbeschriftungen sind deutsch. Für englische Befehlsnamen: `CODEX_DECK_
 
 ## Datenschutz und Hilfe
 
-Die Brücke liest lokal Aufgabentitel, IDs und Statusmarker aus Codex-Dateien. Die Wochenanzeige fragt die installierte Codex-CLI ab; diese kann mit dem vorhandenen Konto OpenAI kontaktieren. Die Brücke überträgt keine Chatverläufe und enthält keine eigene Telemetrie. Sichtbare Aufgabentitel können von Personen am Schreibtisch gelesen werden.
+Die Brücke liest lokal Aufgabentitel, IDs und Statusmarker aus Codex-Dateien sowie Ungelesen-Markierungen aus Codex' globaler Statusdatei. Sie verändert diese Markierungen nicht. Die Wochenanzeige fragt die installierte Codex-CLI ab; diese kann mit dem vorhandenen Konto OpenAI kontaktieren. Die Brücke überträgt keine Chatverläufe und enthält keine eigene Telemetrie. Sichtbare Aufgabentitel können von Personen am Schreibtisch gelesen werden.
 
 Bei Problemen: [Fehlerbehebung](TROUBLESHOOTING.md). Niemals `.codex`, Zugangsdaten, Datenbanken oder echte Chat-/Sitzungsdateien in ein GitHub-Issue hochladen.
 

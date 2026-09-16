@@ -2,6 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { loadUnreadThreadIds } from "./thread-read-state.js";
 
 const DEFAULT_CATALOG = path.join(os.homedir(), ".codex", "sqlite", "codex-dev.db");
 const DEFAULT_SESSIONS = path.join(os.homedir(), ".codex", "sessions");
@@ -70,6 +71,7 @@ export function loadAgentEntries(
   dbPath = DEFAULT_CATALOG,
   slotsPath = DEFAULT_SLOTS,
   sessionsRoot = DEFAULT_SESSIONS,
+  readStatePath = undefined,
 ) {
   let db;
   try {
@@ -100,6 +102,7 @@ export function loadAgentEntries(
           : { threadId, title: "AGENT", recencyAt: null, runState: "unknown" };
       });
     }
+    const unreadThreadIds = slotsPath === null ? loadUnreadThreadIds(readStatePath) : null;
     const recentRows = db.prepare(
       `SELECT thread_id, display_title, source_recency_at
          FROM local_thread_catalog
@@ -135,6 +138,7 @@ export function loadAgentEntries(
       fullTitle: row.display_title,
       recencyAt: Number(row.source_recency_at) || null,
       runState: loadThreadRunState(row.thread_id, sessionsRoot),
+      hasUnreadTurn: unreadThreadIds === null ? null : unreadThreadIds.has(row.thread_id),
     }));
   } catch {
     return [];

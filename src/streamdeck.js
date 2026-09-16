@@ -517,16 +517,15 @@ export function agentRecencyLabel(entry, now = Date.now()) {
 
 export function agentDirectStatusLabel(entry, now = Date.now()) {
   if (entry?.runState === "working") return "ARBEITET";
-  if (entry?.runState === "complete") return "BEREIT";
+  if (entry?.runState === "complete") return entry.hasUnreadTurn === false ? "BEREIT" : "FERTIG";
   if (entry?.runState === "error") return "FEHLER";
   return agentRecencyLabel(entry, now);
 }
 
 export function agentDirectStatusAccent(entry, now = Date.now()) {
   if (entry?.runState === "working") return unpackRgb(STATE_COLOR.working);
-  // Direct mode has no reliable unread/read signal. A completed turn is
-  // therefore neutral "ready", not a misleading green success state.
-  if (entry?.runState === "complete") return AGENT_OFF;
+  // Keep a finished result green until Codex confirms it has been read.
+  if (entry?.runState === "complete") return entry.hasUnreadTurn === false ? AGENT_OFF : unpackRgb(STATE_COLOR.unread);
   if (entry?.runState === "error") return unpackRgb(STATE_COLOR.error);
   if (!entry?.threadId || !entry?.recencyAt) return AGENT_OFF;
   const ageMinutes = Math.max(0, (now - entry.recencyAt * 1000) / 60000);
