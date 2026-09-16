@@ -46,17 +46,19 @@ jobs:
       - name: Build Swift helper for analysis
         if: matrix.language == 'swift'
         working-directory: native/CodexMicroVirtualHID
-        # Invoke the toolchain directly so macOS system wrappers cannot drop
-        # the environment CodeQL needs to trace the compiler.
+        # CodeQL's bundled Clang cannot import Xcode's precompiled bridging
+        # header. Read the original header with -disable-bridging-pch instead.
         run: |
           swift_compiler="$(xcrun --find swiftc)"
           macos_sdk="$(xcrun --sdk macosx --show-sdk-path)"
           "$CODEQL_DIST/codeql" database trace-command \
             --working-dir="$PWD" "$CODEQL_EXTRACTOR_SWIFT_WIP_DATABASE" -- \
-            "$swift_compiler" -O -sdk "$macos_sdk" \
+            "$swift_compiler" -O -disable-bridging-pch -sdk "$macos_sdk" \
             -import-objc-header IOHIDUserDeviceShim.h \
             -framework IOKit -framework CoreFoundation -framework Foundation \
             main.swift -o CodexMicroVirtualHID
+          # Fail if the helper was built but CodeQL did not extract its source.
+          test -s "$CODEQL_EXTRACTOR_SWIFT_TRAP_DIR/sources$PWD/main.swift.trap"
       - uses: github/codeql-action/analyze@v4
         with:
           category: '/language:${{ matrix.language }}'
