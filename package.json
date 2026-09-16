@@ -1,0 +1,42 @@
+{
+  "name": "codex-stream-deck",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Local macOS Stream Deck bridge for Codex: task status, shortcuts and weekly usage.",
+  "type": "module",
+  "bin": {
+    "codex-micro-emulator": "bin/codex-micro-emulator.js",
+    "codex-stream-deck": "bin/codex-streamdeck-direct.js"
+  },
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node bin/codex-streamdeck-direct.js",
+    "doctor": "node bin/doctor.js",
+    "install:autostart": "zsh bin/install-autostart.sh",
+    "uninstall:autostart": "zsh bin/uninstall-autostart.sh",
+    "start:legacy": "node bin/codex-micro-emulator.js",
+    "build:native": "bash native/CodexMicroVirtualHID/build.sh"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "optionalDependencies": {
+    "@elgato-stream-deck/node": "^7.1.0",
+    "sharp": "^0.35.4",
+    "lucide-static": "^0.460.0"
+  },
+  "keywords": [
+    "codex",
+    "codex-micro",
+    "stream-deck",
+    "elgato",
+    "hid",
+    "virtual-hid",
+    "work-louder",
+    "chatgpt"
+  ],
+  "license": "MIT"
+}
