@@ -1,10 +1,10 @@
 # Codex Stream Deck
 
-A local macOS bridge that puts **Codex tasks, shortcuts and weekly usage** on an Elgato Stream Deck. Built around the 15-key Stream Deck MK.2, with a separate Stream Deck + layout.
+A local macOS bridge that puts **Codex task status, shortcuts and weekly usage** on an Elgato Stream Deck. It is for people who want to open local Codex desktop tasks or see their remaining weekly allowance from a 15-key Stream Deck MK.2; it is not an MCP server or a Claude integration. A separate Stream Deck + layout is included.
 
 **Community project · MIT license · experimental desktop integration**
 
-[Deutsche Anleitung](docs/README.de.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md)
+[Deutsche Anleitung](docs/README.de.md) · [FAQ](docs/FAQ.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Development](DEVELOPMENT.md) · [Discovery notes](docs/DISCOVERY.md) · [AI-reader index](llms.txt) · [Project facts](project.json)
 
 ![Example MK.2 key layout with synthetic task names and example usage](assets/layout-preview.png)
 
@@ -17,6 +17,12 @@ The image is a software-rendered example, not a hardware acceptance test.
 - Displays the remaining ordinary Codex weekly allowance. Unavailable or expired data displays **KEINE DATEN**, never a guessed percentage.
 - Provides action keys for Enter, Escape, Fast mode, fork, Quick Chat, archive, voice and opening Codex.
 - Runs independently of Codex: no app patching, injected shim or app restart is needed in the recommended direct mode.
+
+## Is this a fit?
+
+Use Codex Stream Deck when you use the Codex desktop app on macOS, have a USB Elgato Stream Deck, and want local task visibility or carefully scoped desktop shortcuts. It is especially suited to a Stream Deck MK.2 with 15 keys.
+
+It is not a fit for Claude Code, browser-only or cloud-only task workflows, Windows/Linux, a generic MCP server, a hosted service, or hands-off approval automation. The bridge depends on experimental local Codex desktop formats and macOS permissions, so it should be evaluated before relying on it in a critical workflow. See the [FAQ](docs/FAQ.md) and [verification status](docs/VERIFICATION.md) for exact boundaries.
 
 ## Compatibility and limits
 
@@ -110,6 +116,10 @@ Weekly CLI discovery tries the configured path, Codex.app, the older ChatGPT.app
 The bridge reads task titles, IDs, recency and event markers from the local Codex catalog/session files, plus unread flags from Codex's global state file. It does not change Codex's read flags. Session files can contain conversations, but this integration uses their state markers and does not transmit or log conversation content. Task names are visible to anyone looking at the deck.
 
 The weekly gauge starts the locally installed Codex CLI and calls `account/rateLimits/read`; that CLI uses the user's existing authentication and may contact OpenAI. No separate API key or model request is needed. The bridge itself has no telemetry/upload feature. **Do not upload your `.codex` folder, databases, logs, credentials or real session captures to issues.**
+
+## Related project
+
+[WhatsApp Assistant](https://github.com/ckundel2008/whatsapp-agent-mcp) is a separate project by the same publisher for local WhatsApp MCP tools. It is not a dependency of Codex Stream Deck and does not add WhatsApp capabilities to this bridge.
 
 ## Credits and license
 

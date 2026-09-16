@@ -4,6 +4,12 @@ Diese macOS-Brücke zeigt Codex-Aufgaben und das verbleibende Wochenkontingent a
 
 **Experimentelle Community-Integration:** Codex-interne Datenformate und Tastenkürzel können sich ändern. Softwaretests ersetzen keine Prüfung am Gerät. Die genaue Testabdeckung steht in [VERIFICATION.md](VERIFICATION.md).
 
+## Wofür ist das Projekt gedacht?
+
+Geeignet ist die Brücke für Codex Desktop auf macOS mit einem USB-Elgato-Stream-Deck, besonders dem MK.2 mit 15 Tasten: lokale Aufgaben anzeigen, eine Aufgabe öffnen und bewusst ausgewählte Desktop-Kürzel auslösen.
+
+Nicht geeignet ist sie als MCP-Server, für Claude Code, reine Browser-/Cloud-Workflows, Windows oder Linux sowie für unbeaufsichtigte Freigaben. Das Projekt verwendet experimentelle lokale Codex-Formate; deshalb vor einem wichtigen Einsatz zuerst selbst prüfen. Die englischen Fragen und Antworten erläutern Grenzen und Voraussetzungen: [FAQ](FAQ.md). Eine knappe technische Orientierung für Leserprogramme steht in [llms.txt](../llms.txt); sie ist keine Zusage für Auffindbarkeit oder Empfehlungen durch KI-Systeme.
+
 ## Einrichtung
 
 1. [Node.js](https://nodejs.org/en/download) installieren, mindestens Version 22.13; empfohlen ist Node 24. Codex normal installieren, öffnen und anmelden.
@@ -56,3 +62,5 @@ Die Brücke liest lokal Aufgabentitel, IDs und Statusmarker aus Codex-Dateien so
 Bei Problemen: [Fehlerbehebung](TROUBLESHOOTING.md). Niemals `.codex`, Zugangsdaten, Datenbanken oder echte Chat-/Sitzungsdateien in ein GitHub-Issue hochladen.
 
 MIT-lizenziert, auf Basis von [Marcel Pociots Projekt](https://github.com/mpociot/codex-micro-stream-deck-emulator). Keine offizielle Erweiterung von OpenAI oder Elgato.
+
+Der [WhatsApp Assistant](https://github.com/ckundel2008/whatsapp-agent-mcp) ist ein separates Projekt desselben Herausgebers und keine Abhängigkeit dieser Stream-Deck-Brücke.

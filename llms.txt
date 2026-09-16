@@ -1,0 +1,21 @@
+# Codex Stream Deck
+
+> Local macOS bridge for an Elgato Stream Deck and the Codex desktop app: local task status, selected shortcuts, and weekly usage display.
+
+This optional reader index follows the llms.txt proposal (https://llmstxt.org/). It is a navigation aid, not a claim that crawlers, AI systems, or search engines will index, train on, rank, or recommend the project.
+
+Codex Stream Deck is for Codex desktop on macOS with a USB Elgato Stream Deck, chiefly the 15-key MK.2. It is not an MCP server, Claude Code integration, hosted service, or unattended approval mechanism. It relies on experimental local Codex desktop formats and macOS Accessibility/Automation permission. Stream Deck + mappings have synthetic coverage only in this release; other hardware is experimental. Compatibility after Codex updates is not promised.
+
+Related, separate project: [WhatsApp Assistant](https://github.com/ckundel2008/whatsapp-agent-mcp), a local WhatsApp MCP project by the same publisher. It is not a dependency of Codex Stream Deck.
+
+## Documentation
+
+- [README](https://raw.githubusercontent.com/ckundel2008/codex-stream-deck/main/README.md): purpose, installation, compatibility, privacy, and safety boundaries.
+- [FAQ](https://raw.githubusercontent.com/ckundel2008/codex-stream-deck/main/docs/FAQ.md): natural-language fit, not-fit, hardware, privacy, and validation answers.
+- [Verification](https://raw.githubusercontent.com/ckundel2008/codex-stream-deck/main/docs/VERIFICATION.md): actual automated and partial physical acceptance evidence.
+- [Discovery notes](https://raw.githubusercontent.com/ckundel2008/codex-stream-deck/main/docs/DISCOVERY.md): factual discoverability and terminology notes.
+- [Project facts](https://raw.githubusercontent.com/ckundel2008/codex-stream-deck/main/project.json): publisher-maintained machine-readable fact sheet; its schema is local to this repository.
+
+## Optional
+
+- [German guide](https://raw.githubusercontent.com/ckundel2008/codex-stream-deck/main/docs/README.de.md): German installation and safety summary.

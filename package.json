@@ -2,7 +2,15 @@
   "name": "codex-stream-deck",
   "version": "0.2.0",
   "private": true,
-  "description": "Local macOS Stream Deck bridge for Codex: task status, shortcuts and weekly usage.",
+  "description": "Local macOS Elgato Stream Deck bridge for Codex task status, shortcuts and weekly usage.",
+  "homepage": "https://github.com/ckundel2008/codex-stream-deck#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ckundel2008/codex-stream-deck.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ckundel2008/codex-stream-deck/issues"
+  },
   "type": "module",
   "bin": {
     "codex-micro-emulator": "bin/codex-micro-emulator.js",
@@ -30,13 +38,14 @@
   },
   "keywords": [
     "codex",
-    "codex-micro",
     "stream-deck",
     "elgato",
-    "hid",
-    "virtual-hid",
-    "work-louder",
-    "chatgpt"
+    "macos",
+    "desktop-automation",
+    "task-status",
+    "codex-desktop",
+    "weekly-usage",
+    "local-first"
   ],
   "license": "MIT"
 }

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "name": "Codex Stream Deck",
+  "repository": "https://github.com/ckundel2008/codex-stream-deck",
+  "summary": "Local macOS bridge for an Elgato Stream Deck and the Codex desktop app: task status, selected shortcuts, and weekly usage display.",
+  "maintainer": {
+    "name": "ckundel2008",
+    "url": "https://github.com/ckundel2008"
+  },
+  "license": {
+    "ownSource": "MIT",
+    "thirdPartyNotices": "https://github.com/ckundel2008/codex-stream-deck/blob/main/THIRD_PARTY_NOTICES.md"
+  },
+  "kind": "local-desktop-hardware-bridge",
+  "maturity": "experimental-community-integration",
+  "requirements": [
+    "macOS",
+    "Node.js 22.13 or newer; Node 24 recommended",
+    "Codex desktop app",
+    "USB Elgato Stream Deck",
+    "macOS Accessibility and Automation permission for the bridge process"
+  ],
+  "suitableFor": [
+    "Local Codex desktop task visibility on macOS",
+    "Opening local Codex tasks from a Stream Deck",
+    "Displaying the remaining ordinary Codex weekly allowance",
+    "A 15-key Elgato Stream Deck MK.2 workflow"
+  ],
+  "unsuitableFor": [
+    "MCP server use",
+    "Claude Code or other AI-provider integrations",
+    "Windows or Linux",
+    "Browser-only or cloud-only task workflows",
+    "Unattended approval or message-sending automation"
+  ],
+  "capabilities": [
+    "Show up to five local Codex tasks with observed state and recency",
+    "Open a task in Codex",
+    "Show remaining ordinary weekly allowance or no-data state",
+    "Provide selected desktop shortcut keys",
+    "Run as a direct local bridge or optional login service"
+  ],
+  "limitations": [
+    "Relies on experimental internal Codex desktop files and shortcuts that can change",
+    "Remote and cloud task states are not represented by local running-state discovery",
+    "Stream Deck + mappings have synthetic coverage only; other hardware is experimental",
+    "Physical acceptance is partial and reboot/fresh-Mac acceptance was not performed",
+    "Approve sends Enter and Reject sends Escape to the focused Codex control without validating a specific pending approval"
+  ],
+  "evidence": {
+    "reviewedAt": "2026-09-16",
+    "sourceLinks": [
+      "https://github.com/ckundel2008/codex-stream-deck/blob/main/docs/FAQ.md",
+      "https://github.com/ckundel2008/codex-stream-deck/blob/main/docs/VERIFICATION.md",
+      "https://github.com/ckundel2008/codex-stream-deck#readme"
+    ],
+    "liveAcceptance": "partial, see VERIFICATION"
+  },
+  "relatedProjects": [
+    {
+      "name": "WhatsApp Assistant",
+      "repository": "https://github.com/ckundel2008/whatsapp-agent-mcp",
+      "relationship": "separate project by same publisher; not a dependency"
+    }
+  ]
+}
