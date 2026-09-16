@@ -47,7 +47,9 @@ jobs:
         run: |
           swift_compiler="$(xcrun --find swiftc)"
           macos_sdk="$(xcrun --sdk macosx --show-sdk-path)"
-          "$swift_compiler" -O -sdk "$macos_sdk" \
+          "$CODEQL_DIST/codeql" database trace-command \
+            "$CODEQL_EXTRACTOR_SWIFT_WIP_DATABASE" -- \
+            "$swift_compiler" -O -sdk "$macos_sdk" \
             -import-objc-header IOHIDUserDeviceShim.h \
             -framework IOKit -framework CoreFoundation -framework Foundation \
             main.swift -o CodexMicroVirtualHID
