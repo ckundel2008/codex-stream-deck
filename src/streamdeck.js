@@ -134,6 +134,7 @@ export class StreamDeckBackend {
     this.readWeeklyUsage = opts.readWeeklyUsage ?? readWeeklyUsage;
     this.lastLighting = emulator.lighting;
     this.paintChain = Promise.resolve();
+    this.coalescedPaints = new Map();
 
     this.buttons = []; // button control defs, indexed by control.index
     this.encoders = []; // encoder control defs
@@ -184,14 +185,14 @@ export class StreamDeckBackend {
 
     this.emulator.on("lighting", (model) => {
       this.lastLighting = model;
-      this._queuePaint(() => this._paint(model)).catch(() => {});
+      this._queueLatestPaint("lighting", () => this._paint(this.lastLighting));
     });
 
     await this._refreshAgentTitles(false);
     await this._paintStatic();
     await this._paintLcdLabels();
     this.titleTimer = setInterval(
-      () => this._queuePaint(() => this._refreshAgentTitles(true)).catch(() => {}),
+      () => this._queueLatestPaint("titles", () => this._refreshAgentTitles(true)),
       2000,
     );
     this.titleTimer.unref?.();
@@ -279,6 +280,23 @@ export class StreamDeckBackend {
     const next = this.paintChain.then(work, work);
     this.paintChain = next.catch(() => {});
     return next;
+  }
+
+  /** Keep one pending refresh per source; HID writes remain serialized. */
+  _queueLatestPaint(key, work) {
+    const existing = this.coalescedPaints.get(key);
+    if (existing) {
+      existing.work = work;
+      return existing.promise;
+    }
+    const entry = { work, promise: null };
+    const queued = this._queuePaint(async () => {
+      this.coalescedPaints.delete(key);
+      return entry.work();
+    });
+    entry.promise = queued.catch((error) => { this.onError(error); });
+    this.coalescedPaints.set(key, entry);
+    return entry.promise;
   }
 
   /** Paint the complete dark key set once; live agent colors update afterwards. */

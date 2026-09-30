@@ -138,6 +138,19 @@ test("the deck repaints when a completed result is read and when a new unread re
   ]);
 });
 
+test("periodic paints coalesce to the latest state while HID work remains ordered", async () => {
+  const backend = new StreamDeckBackend(new CodexMicroEmulator());
+  let release;
+  const gate = backend._queuePaint(() => new Promise((resolve) => { release = resolve; }));
+  const painted = [];
+  const first = backend._queueLatestPaint("lighting", async () => painted.push("old"));
+  const second = backend._queueLatestPaint("lighting", async () => painted.push("new"));
+  await Promise.resolve();
+  release();
+  await Promise.all([gate, first, second]);
+  assert.deepEqual(painted, ["new"]);
+});
+
 test("reasoning dial rotation emits ENC_CW/ENC_CC with act 2 (single tick)", () => {
   const emulator = new CodexMicroEmulator();
   const backend = new StreamDeckBackend(emulator);

@@ -109,6 +109,61 @@ test("a marker completed after an initial partial write updates its state", () =
   assert.equal(loadThreadRunState(threadId, root), "working");
 });
 
+test("large appends and long records stay bounded while preserving the newest marker", () => {
+  const threadId = syntheticThreadId(new Date(2026, 7, 31, 12));
+  const root = mkdtempSync(join(tmpdir(), "codex-micro-large-rollout-"));
+  const directory = join(root, "2026", "08", "31");
+  const rollout = join(directory, `rollout-large-${threadId}.jsonl`);
+  mkdirSync(directory, { recursive: true });
+  const largeMessage = "x".repeat(2 * 1024 * 1024);
+  writeFileSync(rollout, `${JSON.stringify({ type: "event_msg", payload: { type: "task_started" } })}\n`);
+  assert.equal(loadThreadRunState(threadId, root), "working");
+  appendFileSync(rollout, `${JSON.stringify({ type: "event_msg", payload: { type: "message", text: largeMessage } })}\n`);
+  appendFileSync(rollout, `${JSON.stringify({ type: "event_msg", payload: { type: "task_complete", text: largeMessage } })}\n`);
+  assert.equal(loadThreadRunState(threadId, root), "complete");
+});
+
+test("partial UTF-8 records are joined as bytes before parsing", () => {
+  const threadId = syntheticThreadId(new Date(2026, 7, 31, 12));
+  const root = mkdtempSync(join(tmpdir(), "codex-micro-utf8-rollout-"));
+  const directory = join(root, "2026", "08", "31");
+  const rollout = join(directory, `rollout-utf8-${threadId}.jsonl`);
+  mkdirSync(directory, { recursive: true });
+  const record = Buffer.from(`${JSON.stringify({ note: "Größe", type: "event_msg", payload: { type: "task_complete" } })}\n`);
+  const splitAt = record.indexOf(Buffer.from("ö")) + 1;
+  writeFileSync(rollout, record.subarray(0, splitAt));
+  assert.equal(loadThreadRunState(threadId, root), "unknown");
+  appendFileSync(rollout, record.subarray(splitAt));
+  assert.equal(loadThreadRunState(threadId, root), "complete");
+});
+
+test("a newline at a reverse-scan chunk boundary terminates safely", () => {
+  const threadId = syntheticThreadId(new Date(2026, 7, 31, 12));
+  const root = mkdtempSync(join(tmpdir(), "codex-micro-boundary-rollout-"));
+  const directory = join(root, "2026", "08", "31");
+  const rollout = join(directory, `rollout-boundary-${threadId}.jsonl`);
+  mkdirSync(directory, { recursive: true });
+  writeFileSync(rollout, `\n${"x".repeat(64 * 1024)}`);
+  assert.equal(loadThreadRunState(threadId, root), "unknown");
+});
+
+test("oversized records require a completed line and structural event fields", () => {
+  const threadId = syntheticThreadId(new Date(2026, 7, 31, 12));
+  const root = mkdtempSync(join(tmpdir(), "codex-micro-structural-rollout-"));
+  const directory = join(root, "2026", "08", "31");
+  const rollout = join(directory, `rollout-structural-${threadId}.jsonl`);
+  mkdirSync(directory, { recursive: true });
+  const padding = "x".repeat(2 * 1024 * 1024);
+  writeFileSync(rollout, JSON.stringify({ nested: { type: "event_msg", payload: { type: "task_complete" } }, text: padding }));
+  assert.equal(loadThreadRunState(threadId, root), "unknown");
+  appendFileSync(rollout, "\n");
+  assert.equal(loadThreadRunState(threadId, root), "unknown");
+  appendFileSync(rollout, JSON.stringify({ type: "event_msg", payload: { type: "task_complete" }, text: padding }));
+  assert.equal(loadThreadRunState(threadId, root), "unknown");
+  appendFileSync(rollout, "\n");
+  assert.equal(loadThreadRunState(threadId, root), "complete");
+});
+
 function syntheticThreadId(date) {
   // Rollout lookup derives the creation day from a UUIDv7 timestamp.
   const hex = date.getTime().toString(16).padStart(12, "0");

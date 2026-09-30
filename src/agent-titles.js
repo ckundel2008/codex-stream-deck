@@ -16,6 +16,12 @@ const sessionScanState = new Map();
 const RECENT_SESSION_DAYS = 2;
 const FULL_RECONCILE_MS = 30_000;
 const CACHE_LIMIT = 512;
+const RUN_STATE_CHUNK_BYTES = 64 * 1024;
+// Task markers are written in the event envelope, before potentially large
+// payloads. Keep only that bounded envelope when a rollout contains a very
+// long line; retaining the full record makes the two-second refresh grow with
+// arbitrary agent output.
+const RUN_STATE_METADATA_BYTES = 128 * 1024;
 
 // Opening verbs and filler words carry little meaning on a 72 px key. Prefer
 // the first distinctive word, optionally joined with one short neighbour.
@@ -253,11 +259,20 @@ export function loadThreadRunState(threadId, sessionsRoot = DEFAULT_SESSIONS) {
     }
     if (size === cached.size) return cached.state;
 
-    const appended = Buffer.alloc(size - cached.size);
-    fs.readSync(fd, appended, 0, appended.length, cached.size);
-    const lines = `${cached.partial}${appended.toString("utf8")}`.split("\n");
-    cached.partial = lines.pop() ?? "";
-    for (const line of lines) cached.state = runStateFromLine(line) ?? cached.state;
+    let position = cached.size;
+    let partial = cached.partial;
+    let state = cached.state;
+    while (position < size) {
+      const length = Math.min(RUN_STATE_CHUNK_BYTES, size - position);
+      const chunk = Buffer.allocUnsafe(length);
+      readExact(fd, chunk, length, position);
+      position += length;
+      const consumed = consumeRunStateChunk(partial, chunk, state);
+      partial = consumed.partial;
+      state = consumed.state;
+    }
+    cached.partial = partial;
+    cached.state = state;
     cached.size = size;
     return cached.state;
   } catch {
@@ -268,34 +283,91 @@ export function loadThreadRunState(threadId, sessionsRoot = DEFAULT_SESSIONS) {
 }
 
 function latestRunStateFromFile(fd, size) {
-  let position = size;
-  let trailingFragment = "";
-  let finalPartial = "";
-  let state = null;
-  let firstChunk = true;
+  let end = size;
+  let finalPartial = emptyRunStatePartial();
+  let firstLine = true;
+  let position = end;
+  const hasFinalNewline = size > 0 && readLastByte(fd, size) === 0x0a;
   while (position > 0) {
-    const length = Math.min(position, 256 * 1024);
+    const length = Math.min(RUN_STATE_CHUNK_BYTES, position);
     position -= length;
-    const buffer = Buffer.alloc(length);
-    fs.readSync(fd, buffer, 0, length, position);
-    const lines = `${buffer.toString("utf8")}${trailingFragment}`.split("\n");
-    if (firstChunk) {
-      finalPartial = lines.pop() ?? "";
-      state = runStateFromLine(finalPartial);
-      firstChunk = false;
-    }
-    trailingFragment = lines.shift() ?? "";
-    for (let index = lines.length - 1; index >= 0; index--) {
-      state = runStateFromLine(lines[index]);
+    const chunk = Buffer.allocUnsafe(length);
+    readExact(fd, chunk, length, position);
+    for (let index = chunk.lastIndexOf(0x0a); index >= 0;) {
+      const start = position + index + 1;
+      const line = readRunStatePrefix(fd, start, end - start, !firstLine || hasFinalNewline);
+      if (firstLine) {
+        finalPartial = line.length === 0 ? emptyRunStatePartial() : line;
+        firstLine = false;
+      }
+      const state = runStateFromPartial(line);
       if (state) return { state, partial: finalPartial };
+      end = position + index;
+      index = index === 0 ? -1 : chunk.lastIndexOf(0x0a, index - 1);
     }
   }
-  return { state: state ?? runStateFromLine(trailingFragment) ?? "unknown", partial: finalPartial };
+  if (end > 0) {
+    const line = readRunStatePrefix(fd, 0, end, !firstLine || hasFinalNewline);
+    if (firstLine) finalPartial = line;
+    const state = runStateFromPartial(line);
+    if (state) return { state, partial: finalPartial };
+  }
+  return { state: "unknown", partial: finalPartial };
 }
 
-function runStateFromLine(line) {
-  if (!line) return null;
+function readExact(fd, buffer, length, position) {
+  if (fs.readSync(fd, buffer, 0, length, position) !== length) throw new Error("rollout changed while reading");
+}
+
+function readLastByte(fd, size) {
+  const byte = Buffer.allocUnsafe(1);
+  readExact(fd, byte, 1, size - 1);
+  return byte[0];
+}
+
+function readRunStatePrefix(fd, start, length, complete = false) {
+  const kept = Math.min(length, RUN_STATE_METADATA_BYTES);
+  const prefix = Buffer.allocUnsafe(kept);
+  if (kept) readExact(fd, prefix, kept, start);
+  return { prefix, length, oversized: length > kept, complete };
+}
+
+function emptyRunStatePartial() {
+  return { prefix: Buffer.alloc(0), length: 0, oversized: false, complete: false };
+}
+
+function appendRunStatePartial(partial, bytes) {
+  const length = partial.length + bytes.length;
+  if (partial.prefix.length === RUN_STATE_METADATA_BYTES) {
+    return { prefix: partial.prefix, length, oversized: true, complete: false };
+  }
+  const kept = Math.min(length, RUN_STATE_METADATA_BYTES);
+  const prefix = Buffer.allocUnsafe(kept);
+  partial.prefix.copy(prefix, 0, 0, Math.min(partial.prefix.length, kept));
+  if (partial.prefix.length < kept) {
+    bytes.copy(prefix, partial.prefix.length, 0, kept - partial.prefix.length);
+  }
+  return { prefix, length, oversized: length > kept, complete: false };
+}
+
+function consumeRunStateChunk(partial, chunk, currentState) {
+  let state = currentState;
+  let start = 0;
+  for (;;) {
+    const newline = chunk.indexOf(0x0a, start);
+    if (newline < 0) return { partial: appendRunStatePartial(partial, chunk.subarray(start)), state };
+    const line = { ...appendRunStatePartial(partial, chunk.subarray(start, newline)), complete: true };
+    state = runStateFromPartial(line) ?? state;
+    partial = emptyRunStatePartial();
+    start = newline + 1;
+  }
+}
+
+function runStateFromPartial({ prefix, oversized, complete }) {
+  if (!prefix.length) return null;
+  const line = prefix.toString("utf8").replace(/\r$/, "");
   try {
+    if (oversized) return complete ? runStateFromMetadata(line) : null;
     const record = JSON.parse(line);
     if (record?.type !== "event_msg") return null;
     if (record.payload?.type === "task_started") return "working";
@@ -303,6 +375,118 @@ function runStateFromLine(line) {
     if (record.payload?.type === "turn_aborted") return "error";
   } catch {
     // A record can be incomplete while Codex is appending it.
+  }
+  return null;
+}
+
+function runStateFromMetadata(line) {
+  // For oversized records JSON.parse would require retaining the entire line.
+  // Codex event markers live in this bounded envelope; inspect only their
+  // structural fields so a large task_complete payload still wins.
+  const record = readObjectMarker(line, 0);
+  if (record?.type !== "event_msg") return null;
+  return record.payloadType === "task_started" ? "working"
+    : record.payloadType === "task_complete" ? "complete"
+      : record.payloadType === "turn_aborted" ? "error" : null;
+}
+
+function readObjectMarker(line, start) {
+  let position = skipWhitespace(line, start);
+  if (line[position++] !== "{") return null;
+  let type = null;
+  let payloadType = null;
+  for (;;) {
+    position = skipWhitespace(line, position);
+    if (position >= line.length) return { type, payloadType };
+    if (line[position] === "}") return { type, payloadType };
+    const key = readJsonString(line, position);
+    if (!key) return { type, payloadType };
+    position = skipWhitespace(line, key.end);
+    if (line[position++] !== ":") return { type, payloadType };
+    position = skipWhitespace(line, position);
+    if (key.value === "type") {
+      const value = readJsonString(line, position);
+      if (!value) return { type, payloadType };
+      type = value.value;
+      position = value.end;
+    } else if (key.value === "payload") {
+      const payload = readPayloadType(line, position);
+      if (!payload) return { type, payloadType };
+      payloadType = payload.type;
+      position = payload.end;
+    } else {
+      position = skipJsonValue(line, position);
+      if (position == null) return { type, payloadType };
+    }
+    position = skipWhitespace(line, position);
+    if (position >= line.length) return { type, payloadType };
+    if (line[position] === "}") return { type, payloadType };
+    if (line[position++] !== ",") return null;
+  }
+}
+
+function readPayloadType(line, start) {
+  let position = skipWhitespace(line, start);
+  if (line[position++] !== "{") return null;
+  let type = null;
+  for (;;) {
+    position = skipWhitespace(line, position);
+    if (position >= line.length) return { type, end: position };
+    if (line[position] === "}") return { type, end: position + 1 };
+    const key = readJsonString(line, position);
+    if (!key) return { type, end: position };
+    position = skipWhitespace(line, key.end);
+    if (line[position++] !== ":") return { type, end: position };
+    position = skipWhitespace(line, position);
+    if (key.value === "type") {
+      const value = readJsonString(line, position);
+      if (!value) return { type, end: position };
+      type = value.value;
+      position = value.end;
+    } else {
+      position = skipJsonValue(line, position);
+      if (position == null) return { type, end: line.length };
+    }
+    position = skipWhitespace(line, position);
+    if (position >= line.length) return { type, end: position };
+    if (line[position] === "}") return { type, end: position + 1 };
+    if (line[position++] !== ",") return null;
+  }
+}
+
+function readJsonString(line, start) {
+  if (line[start] !== '"') return null;
+  let end = start + 1;
+  for (; end < line.length; end++) {
+    if (line[end] === "\\") { end++; continue; }
+    if (line[end] === '"') {
+      try { return { value: JSON.parse(line.slice(start, end + 1)), end: end + 1 }; } catch { return null; }
+    }
+  }
+  return null;
+}
+
+function skipWhitespace(line, position) {
+  while (/\s/.test(line[position] ?? "")) position++;
+  return position;
+}
+
+function skipJsonValue(line, position) {
+  if (line[position] === '"') return readJsonString(line, position)?.end ?? null;
+  const opening = line[position];
+  if (opening !== "{" && opening !== "[") {
+    while (position < line.length && !/[\s,}\]]/.test(line[position])) position++;
+    return position;
+  }
+  const closing = opening === "{" ? "}" : "]";
+  let depth = 0;
+  for (; position < line.length; position++) {
+    if (line[position] === '"') {
+      const string = readJsonString(line, position);
+      if (!string) return null;
+      position = string.end - 1;
+    } else if (line[position] === opening) depth++;
+    else if (line[position] === closing && --depth === 0) return position + 1;
   }
   return null;
 }
