@@ -50,11 +50,17 @@ test('refresh writes success and unavailable values, stop prevents a late write'
   await pending;
   assert.equal(writes.length, 2);
 });
-test('CLI discovery prefers explicit configuration and supports both macOS app bundles', () => {
+test('CLI discovery prefers explicit configuration and supports current and legacy macOS app bundles', () => {
   assert.equal(resolveCodexCli({ binary: '/custom/codex' }), '/custom/codex');
   assert.equal(resolveCodexCli({ env: { CODEX_CLI_BIN: '/configured/codex' } }), '/configured/codex');
-  assert.equal(resolveCodexCli({ env: {}, exists: path => path.includes('/Codex.app/') }), '/Applications/Codex.app/Contents/Resources/codex');
-  assert.equal(resolveCodexCli({ env: {}, exists: path => path.includes('/ChatGPT.app/') }), '/Applications/ChatGPT.app/Contents/Resources/codex');
+  const codexNested = '/Applications/Codex.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex';
+  const chatgptNested = '/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex';
+  const codexLegacy = '/Applications/Codex.app/Contents/Resources/codex';
+  const chatgptLegacy = '/Applications/ChatGPT.app/Contents/Resources/codex';
+  assert.equal(resolveCodexCli({ env: {}, exists: path => path === codexNested }), codexNested);
+  assert.equal(resolveCodexCli({ env: {}, exists: path => path === chatgptNested }), chatgptNested);
+  assert.equal(resolveCodexCli({ env: {}, exists: path => path === codexLegacy }), codexLegacy);
+  assert.equal(resolveCodexCli({ env: {}, exists: path => path === chatgptLegacy }), chatgptLegacy);
   assert.equal(resolveCodexCli({ env: {}, exists: () => false }), 'codex');
 });
 

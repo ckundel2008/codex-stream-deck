@@ -16,7 +16,9 @@ export function resolveCodexCli({ binary, env = process.env, exists = existsSync
   if (binary) return binary;
   if (env.CODEX_CLI_BIN) return env.CODEX_CLI_BIN;
   for (const candidate of [
+    '/Applications/Codex.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex',
     '/Applications/Codex.app/Contents/Resources/codex',
+    '/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex',
     '/Applications/ChatGPT.app/Contents/Resources/codex',
   ]) {
     if (exists(candidate)) return candidate;
